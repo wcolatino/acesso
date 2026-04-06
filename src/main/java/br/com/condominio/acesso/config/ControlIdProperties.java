@@ -5,6 +5,12 @@ import org.springframework.stereotype.Component;
 
 import lombok.Data;
 
+/**
+ * Mapeia as propriedades do equipamento iDFace
+ * definidas no application.yml (prefixo: controlid.device).
+ * Fornece o endereço base (IP) para as requisições HTTP.
+ */
+
 @Data
 @Component
 @ConfigurationProperties(prefix = "controlid.device")
