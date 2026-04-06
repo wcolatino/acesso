@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/controle-acesso
+    username: postgres
+    password: admin
+  jpa:
+    hibernate:
+      ddl-auto: none    #Evita erros de inicialização - mudar para validate/update
+    show-sql: false
+
+controlid:
+  device:
+    ip: 192.168.1.194     # IP do iDFace na sua rede
+    admin-user: admin
+    admin-password: Adminws
+    session-timeout: 300   # segundos
