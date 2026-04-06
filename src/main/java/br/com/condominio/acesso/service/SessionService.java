@@ -1,3 +1,9 @@
+/**
+ * Serviço responsável pelo gerenciamento da sessão com o equipamento iDFace.
+ * Realiza login, logout e verificação de validade da sessão.
+ * Renova automaticamente a sessão em intervalos configurados
+ * via application.yml (controlid.device.session-timeout).
+ */
 package br.com.condominio.acesso.service;
 
 import br.com.condominio.acesso.config.ControlIdProperties;
@@ -6,16 +12,12 @@ import br.com.condominio.acesso.dto.controlid.LoginResponse;
 import br.com.condominio.acesso.dto.controlid.SessionValidResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-/**
- * Serviço responsável pelo gerenciamento da sessão com o equipamento iDFace.
- * Realiza login, logout e verificação de validade da sessão.
- * Renova automaticamente a sessão em intervalos configurados
- * via application.yml (controlid.device.session-timeout).
- */
 
 @Slf4j
 @Service
@@ -34,18 +36,27 @@ public class SessionService {
         return currentSession;
     }
 
+    private HttpEntity<Object> buildEntity(Object body) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return new HttpEntity<>(body, headers);
+    }
+
     public void login() {
         try {
             String url = properties.getBaseUrl() + "/login.fcgi";
 
-            LoginRequest request = new LoginRequest(
-                    properties.getAdminUser(),
-                    properties.getAdminPassword()
-            );
+            // JSON manual garantido
+            String jsonBody = "{\"login\":\"" + properties.getAdminUser() + "\",\"password\":\"" + properties.getAdminPassword() + "\"}";
 
-            LoginResponse response = restTemplate.postForObject(
-                    url, request, LoginResponse.class
-            );
+            log.info("Tentando login em: {}", url);
+            log.info("Payload enviado: {}", jsonBody);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
+
+            LoginResponse response = restTemplate.postForObject(url, entity, LoginResponse.class);
 
             if (response != null && response.getSession() != null) {
                 currentSession = response.getSession();
@@ -62,7 +73,7 @@ public class SessionService {
     public void logout() {
         try {
             String url = properties.getBaseUrl() + "/logout.fcgi?session=" + currentSession;
-            restTemplate.postForObject(url, null, Void.class);
+            restTemplate.postForObject(url, buildEntity(null), Void.class);
             currentSession = null;
             log.info("Sessão encerrada com sucesso");
         } catch (Exception e) {
@@ -75,7 +86,7 @@ public class SessionService {
             String url = properties.getBaseUrl() + "/session_is_valid.fcgi?session=" + currentSession;
 
             SessionValidResponse response = restTemplate.postForObject(
-                    url, null, SessionValidResponse.class
+                    url, buildEntity(null), SessionValidResponse.class
             );
 
             return response != null && response.isSessionIsValid();
@@ -88,6 +99,10 @@ public class SessionService {
 
     @Scheduled(fixedDelayString = "${controlid.device.session-timeout}000")
     public void renovarSessao() {
+        if (!properties.isEnabled()) {
+            log.info("iDFace desabilitado nas configurações, pulando renovação de sessão.");
+            return;
+        }
         log.info("Verificando sessão com o iDFace...");
         if (currentSession == null || !isSessionValid()) {
             log.info("Sessão inválida ou expirada, renovando...");

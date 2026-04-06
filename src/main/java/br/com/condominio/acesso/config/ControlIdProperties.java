@@ -1,15 +1,14 @@
+/**
+ * Mapeia as propriedades do equipamento iDFace
+ * definidas no application.yml (prefixo: controlid.device).
+ * Fornece o endereço base (IP) para as requisições HTTP.
+ */
 package br.com.condominio.acesso.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import lombok.Data;
-
-/**
- * Mapeia as propriedades do equipamento iDFace
- * definidas no application.yml (prefixo: controlid.device).
- * Fornece o endereço base (IP) para as requisições HTTP.
- */
 
 @Data
 @Component
@@ -20,6 +19,7 @@ public class ControlIdProperties {
     private String adminUser;
     private String adminPassword;
     private int sessionTimeout;
+    private boolean enabled = true;
 
     public String getBaseUrl() {
         return "http://" + ip;
