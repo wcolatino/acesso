@@ -14,3 +14,8 @@ controlid:
     admin-user: admin
     admin-password: Adminws
     session-timeout: 300   # segundos
+
+logging:
+  level:
+    org.springframework.web.client: DEBUG
+    br.com.condominio: DEBUG
